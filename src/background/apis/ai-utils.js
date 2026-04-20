@@ -6,14 +6,14 @@
  */
 
 export const CATEGORIES = {
-  'refatoração':        '#3b82f6',
-  'lógica de negócio':  '#f59e0b',
-  'correção de bug':    '#ef4444',
-  'estilo/formatação':  '#6b7280',
-  'testes':             '#22c55e',
-  'configuração':       '#8b5cf6',
-  'segurança':          '#f97316',
-  'outro':              '#94a3b8',
+  'Refatoração':        '#3b82f6',
+  'Lógica de negócio':  '#f59e0b',
+  'Correção de bug':    '#ef4444',
+  'Estilo/formatação':  '#6b7280',
+  'Testes':             '#22c55e',
+  'Configuração':       '#8b5cf6',
+  'Segurança':          '#f97316',
+  'Outro':              '#94a3b8',
 };
 
 export function buildPrompt(diff) {

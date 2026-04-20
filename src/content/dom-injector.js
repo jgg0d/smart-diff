@@ -5,48 +5,39 @@
  * - Injeta badges coloridas acima de cada arquivo
  * - Renderiza o painel de sumário com ordem de leitura
  * - Remove injeções anteriores (re-análise)
+ *
+ * Seletores atualizados para o markup do GitHub 2025/2026.
+ * Estrutura real capturada do DOM:
+ *
+ *   div[class*="diffEntry"]
+ *     └── div[class*="diffHeaderWrapper"]
+ *           └── div[class*="diff-file-header"]
+ *                 └── h3[class*="file-name"]
+ *                       └── a.Link--primary > code  ← nome do arquivo
  */
 
-// ── Seletores do GitHub (atualizar se o GitHub mudar o markup) ────────────────
-
-// Container que lista todos os arquivos na aba "Files changed"
-const FILES_CONTAINER_SEL = '#files';
-
-// Cabeçalho de cada arquivo (onde o nome do arquivo aparece)
-const FILE_HEADER_SEL = '.file-header[data-path], [data-tagsearch-path], .js-file-header';
-
-// Elemento pai de cada arquivo (wrapper completo)
-const FILE_WRAPPER_SEL = '.file, [data-file-deleted], .js-file-content, .js-diff-progressive-container > div';
-
-// Onde injetar o painel de sumário (acima da listagem de arquivos)
-const SUMMARY_ANCHOR_SEL = '#files_tab_counter, .pr-toolbar, .diffbar, #files .diff-view';
-
 // ── IDs para limpeza ──────────────────────────────────────────────────────────
-const PANEL_ID         = 'sd-summary-panel';
-const BADGE_CLASS      = 'sd-file-header';
-const HUNK_DESC_CLASS  = 'smart-diff-hunk-desc';
-const LOADING_BAR_ID   = 'sd-loading-bar';
+const PANEL_ID = 'sd-summary-panel';
+const BADGE_CLASS = 'sd-file-header';
+const LOADING_BAR_ID = 'sd-loading-bar';
 
-// ── Category → color map (espelho de ai-router.js) ────────────────────────────
+// ── Category → color map ──────────────────────────────────────────────────────
 const CAT_COLORS = {
-  'refatoração':        '#3b82f6',
-  'lógica de negócio':  '#f59e0b',
-  'correção de bug':    '#ef4444',
-  'estilo/formatação':  '#6b7280',
-  'testes':             '#22c55e',
-  'configuração':       '#8b5cf6',
-  'segurança':          '#f97316',
-  'outro':              '#94a3b8',
+  'refatoração': '#3b82f6',
+  'lógica de negócio': '#f59e0b',
+  'correção de bug': '#ef4444',
+  'estilo/formatação': '#6b7280',
+  'testes': '#22c55e',
+  'configuração': '#8b5cf6',
+  'segurança': '#f97316',
+  'outro': '#94a3b8',
 };
+
+// ── Estado interno ────────────────────────────────────────────────────────────
+let _observer = null;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/**
- * Injeta o painel de sumário e os badges nos arquivos.
- *
- * @param {object} analysis - Objeto padronizado da IA
- * @param {{ tooLarge?: boolean, fileCount?: number }} meta
- */
 export function injectAnalysis(analysis, meta = {}) {
   removeExisting();
 
@@ -60,16 +51,13 @@ export function injectAnalysis(analysis, meta = {}) {
   injectFileBadges(analysis.files || []);
 }
 
-/**
- * Mostra a barra de carregamento com texto de progresso.
- */
 export function showLoadingBar() {
   removeLoadingBar();
   const anchor = findSummaryAnchor();
   if (!anchor) return;
 
   const wrap = document.createElement('div');
-  wrap.id        = LOADING_BAR_ID;
+  wrap.id = LOADING_BAR_ID;
   wrap.className = 'sd-loading-wrap';
   wrap.innerHTML = `
     <div class="sd-loading-track"></div>
@@ -78,27 +66,15 @@ export function showLoadingBar() {
   anchor.parentElement.insertBefore(wrap, anchor);
 }
 
-/**
- * Atualiza o texto de progresso na barra de carregamento.
- * @param {string} text
- */
 export function updateLoadingText(text) {
   const label = document.getElementById('sd-loading-label');
   if (label) label.textContent = text;
 }
 
-/**
- * Remove a barra de carregamento.
- */
 export function removeLoadingBar() {
   document.getElementById(LOADING_BAR_ID)?.remove();
 }
 
-/**
- * Injeta um banner de erro acima dos arquivos.
- *
- * @param {string} message
- */
 export function injectError(message) {
   removeExisting();
   const anchor = findSummaryAnchor();
@@ -106,32 +82,26 @@ export function injectError(message) {
 
   const el = document.createElement('div');
   el.className = 'sd-error';
-  el.id        = PANEL_ID; // reutiliza o ID para limpeza posterior
+  el.id = PANEL_ID;
   el.textContent = `Smart Diff — ${message}`;
   anchor.parentElement.insertBefore(el, anchor);
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-/**
- * Remove todas as injeções anteriores do Smart Diff.
- */
 function removeExisting() {
+  stopObserver();
   document.getElementById(PANEL_ID)?.remove();
   document.querySelectorAll('.' + BADGE_CLASS).forEach(el => el.remove());
-  document.querySelectorAll('.' + HUNK_DESC_CLASS).forEach(el => el.remove());
   removeLoadingBar();
 }
 
-/**
- * Injeta o painel de sumário acima da listagem de arquivos.
- */
 function injectSummaryPanel(analysis) {
   const anchor = findSummaryAnchor();
   if (!anchor) return;
 
   const panel = document.createElement('div');
-  panel.id        = PANEL_ID;
+  panel.id = PANEL_ID;
   panel.className = 'sd-panel';
 
   panel.innerHTML = `
@@ -144,75 +114,135 @@ function injectSummaryPanel(analysis) {
     </div>
     <div class="sd-panel-body">
       <p class="sd-summary-text">${escapeHtml(analysis.summary || '')}</p>
-
       ${buildReadingOrderHTML(analysis.reading_order || [])}
     </div>
   `;
 
   anchor.parentElement.insertBefore(panel, anchor);
-
-  // Botão fechar
   panel.querySelector('#sd-close-btn')?.addEventListener('click', () => panel.remove());
 }
 
 /**
- * Injeta badges acima de cada arquivo na aba "Files changed".
+ * Injeta badges em todos os arquivos presentes no DOM e inicia
+ * MutationObserver para arquivos carregados progressivamente.
  */
 function injectFileBadges(files) {
   if (!files.length) return;
 
-  // Mapear filename → dados da análise para busca rápida
   const fileMap = new Map(files.map(f => [f.filename, f]));
 
-  // Selecionar todos os wrappers de arquivo
-  const fileEls = document.querySelectorAll(
-    '.file[data-path], [data-tagsearch-path].file-header, .js-details-container > .file'
-  );
+  injectBadgesNow(fileMap);
+  startObserver(fileMap);
+}
 
-  fileEls.forEach(fileEl => {
+/**
+ * Percorre todos os containers de arquivo no DOM atual e injeta badges.
+ * Suporta o markup novo (2025/2026) e o markup legado do GitHub.
+ */
+function injectBadgesNow(fileMap) {
+  // ── Markup novo (GitHub 2025/2026) ──────────────────────────────────────
+  // Cada arquivo: div[class*="diffEntry"]
+  // Nome do arquivo: a.Link--primary (ou code dentro dele)
+  document.querySelectorAll('[class*="diffEntry"]').forEach(entry => {
+    if (entry.querySelector('.' + BADGE_CLASS)) return; // já tem badge
+
+    const path = extractPathNewMarkup(entry);
+    if (!path) return;
+
+    const fileData = fuzzyFindFile(path, fileMap);
+    if (!fileData) return;
+
+    const headerWrap = entry.querySelector('[class*="diffHeaderWrapper"]');
+    const badge = buildBadgeElement(fileData);
+
+    if (headerWrap) {
+      headerWrap.insertAdjacentElement('beforebegin', badge);
+    } else {
+      entry.insertAdjacentElement('afterbegin', badge);
+    }
+  });
+
+  // ── Markup legado ────────────────────────────────────────────────────────
+  // Fallback para repos que ainda usam o markup antigo
+  document.querySelectorAll('.file[data-path], [data-tagsearch-path].file-header, .js-details-container > .file').forEach(fileEl => {
     tryInjectBadgeOnElement(fileEl, fileMap);
   });
 
-  // GitHub também usa este seletor em algumas versões
   document.querySelectorAll('[data-path]').forEach(el => {
     tryInjectBadgeOnElement(el.closest('.file') || el, fileMap);
   });
 
-  // Estratégia de fallback: procurar pelo nome de arquivo nos links
   document.querySelectorAll('.file-header').forEach(header => {
     const pathEl = header.querySelector('[data-path], .link-gray-dark, a[title]');
     if (!pathEl) return;
 
     const filename = pathEl.getAttribute('data-path') ||
-                     pathEl.getAttribute('title')     ||
-                     pathEl.textContent.trim();
+      pathEl.getAttribute('title') ||
+      pathEl.textContent.trim();
 
     const fileData = fuzzyFindFile(filename, fileMap);
     if (fileData && !header.previousElementSibling?.classList.contains(BADGE_CLASS)) {
       const badge = buildBadgeElement(fileData);
       header.parentElement.insertBefore(badge, header);
-
-      if (fileData.hunks?.length) {
-        const fileWrapper = header.closest('.file') || header.parentElement;
-        injectHunkDescriptions(fileWrapper, fileData.hunks);
-      }
     }
   });
 }
 
 /**
- * Tenta injetar badge e descrições de hunk num elemento de arquivo.
+ * Extrai o caminho do arquivo a partir de um diffEntry do markup novo.
+ * Remove caracteres invisíveis (LRM/RLM) que o GitHub injeta no texto.
+ */
+function extractPathNewMarkup(entry) {
+  const link = entry.querySelector('a.Link--primary');
+  if (link) {
+    const code = link.querySelector('code');
+    const raw = (code ? code.textContent : link.textContent) || '';
+    const clean = raw.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim();
+    if (clean) return clean;
+  }
+  // Fallback: qualquer code dentro do file-name
+  const code = entry.querySelector('[class*="file-name"] code');
+  if (code) return code.textContent?.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim() || null;
+
+  return null;
+}
+
+/**
+ * MutationObserver para diff carregado progressivamente ao rolar.
+ */
+function startObserver(fileMap) {
+  stopObserver();
+
+  const root = document.querySelector(
+    '[class*="PullRequestDiffsList"], #files, .js-diff-progressive-container'
+  );
+  if (!root) return;
+
+  let timer = null;
+  _observer = new MutationObserver(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => injectBadgesNow(fileMap), 300);
+  });
+
+  _observer.observe(root, { childList: true, subtree: true });
+}
+
+function stopObserver() {
+  _observer?.disconnect();
+  _observer = null;
+}
+
+/**
+ * Tenta injetar badge num elemento de arquivo (markup legado).
  */
 function tryInjectBadgeOnElement(fileEl, fileMap) {
   if (!fileEl) return;
-
-  // Evitar duplicatas
   if (fileEl.previousElementSibling?.classList.contains(BADGE_CLASS)) return;
 
   const path = fileEl.getAttribute('data-path') ||
-               fileEl.querySelector('[data-path]')?.getAttribute('data-path') ||
-               fileEl.querySelector('.link-gray-dark')?.textContent?.trim() ||
-               fileEl.querySelector('a[title]')?.getAttribute('title');
+    fileEl.querySelector('[data-path]')?.getAttribute('data-path') ||
+    fileEl.querySelector('.link-gray-dark')?.textContent?.trim() ||
+    fileEl.querySelector('a[title]')?.getAttribute('title');
 
   if (!path) return;
 
@@ -221,89 +251,38 @@ function tryInjectBadgeOnElement(fileEl, fileMap) {
 
   const badge = buildBadgeElement(fileData);
   fileEl.parentElement.insertBefore(badge, fileEl);
-
-  if (fileData.hunks?.length) {
-    injectHunkDescriptions(fileEl, fileData.hunks);
-  }
 }
 
 /**
- * Injeta linhas de descrição após cada cabeçalho de hunk (@@ ... @@) do arquivo.
- * Deduplica rows para funcionar no split-view (2 td.blob-code-hunk por linha).
- * Fallback por conteúdo de texto caso o seletor de classe não bata.
- */
-function injectHunkDescriptions(fileEl, hunks) {
-  if (!hunks?.length) return;
-
-  const seenRows = new Set();
-  const hunkRows = [];
-
-  // Seletor primário — funciona na maioria das versões do GitHub
-  fileEl.querySelectorAll('td.blob-code-hunk, td.blob-code-expandable').forEach(cell => {
-    const row = cell.closest('tr');
-    if (row && !seenRows.has(row)) {
-      seenRows.add(row);
-      hunkRows.push(row);
-    }
-  });
-
-  // Fallback: linhas cujo texto começa com @@
-  if (!hunkRows.length) {
-    fileEl.querySelectorAll('tr').forEach(row => {
-      if (!seenRows.has(row) && row.textContent.trimStart().startsWith('@@')) {
-        seenRows.add(row);
-        hunkRows.push(row);
-      }
-    });
-  }
-
-  hunkRows.forEach((row, idx) => {
-    const hunk = hunks.find(h => h.i === idx);
-    if (!hunk?.desc) return;
-    if (row.nextElementSibling?.classList.contains(HUNK_DESC_CLASS)) return;
-
-    const colspan = row.querySelectorAll('td').length || 4;
-    const descRow = document.createElement('tr');
-    descRow.className = HUNK_DESC_CLASS;
-    descRow.innerHTML = `<td colspan="${colspan}">${escapeHtml(hunk.desc)}</td>`;
-    row.insertAdjacentElement('afterend', descRow);
-  });
-}
-
-/**
- * Busca fuzzy: tenta match exato primeiro, depois sufixo.
+ * Busca fuzzy: match exato → normalização de barras → sufixo.
  */
 function fuzzyFindFile(path, fileMap) {
   if (!path) return null;
 
-  // Match exato
   if (fileMap.has(path)) return fileMap.get(path);
 
-  // Normaliza barras
-  const normalized = path.replace(/\\/g, '/');
+  const normalized = path.replace(/\\/g, '/').replace(/^\//, '');
   if (fileMap.has(normalized)) return fileMap.get(normalized);
 
-  // Match por sufixo (o GitHub às vezes mostra caminho relativo)
   for (const [key, val] of fileMap.entries()) {
-    if (key.endsWith(normalized) || normalized.endsWith(key)) return val;
+    if (key.endsWith('/' + normalized) || normalized.endsWith('/' + key) || key === normalized) {
+      return val;
+    }
   }
 
   return null;
 }
 
-/**
- * Cria o elemento de badge para um arquivo.
- */
 function buildBadgeElement(fileData) {
   const wrapper = document.createElement('div');
   wrapper.className = BADGE_CLASS + ' sd-file-header';
 
-  const cat   = fileData.category || 'outro';
+  const cat = fileData.category || 'outro';
   const color = CAT_COLORS[cat] || fileData.color || '#94a3b8';
 
   const badge = document.createElement('span');
-  badge.className        = 'sd-badge';
-  badge.dataset.cat      = cat;
+  badge.className = 'sd-badge';
+  badge.dataset.cat = cat;
   badge.dataset.description = fileData.description || '';
 
   badge.innerHTML = `
@@ -315,9 +294,6 @@ function buildBadgeElement(fileData) {
   return wrapper;
 }
 
-/**
- * Constrói o HTML da seção de ordem de leitura.
- */
 function buildReadingOrderHTML(readingOrder) {
   if (!readingOrder.length) return '';
 
@@ -338,9 +314,6 @@ function buildReadingOrderHTML(readingOrder) {
   `;
 }
 
-/**
- * Injeta warning (PR muito grande, etc.).
- */
 function injectWarning(message) {
   const anchor = findSummaryAnchor();
   if (!anchor) return;
@@ -353,10 +326,11 @@ function injectWarning(message) {
 
 /**
  * Encontra o melhor ponto de ancoragem para inserir o painel.
+ * Suporta tanto o markup novo quanto o legado.
  */
 function findSummaryAnchor() {
-  // Tenta vários seletores em ordem de preferência
   const selectors = [
+    '[class*="PullRequestDiffsList"]',
     '#files',
     '.js-diff-progressive-container',
     '.pr-toolbar',
@@ -373,9 +347,6 @@ function findSummaryAnchor() {
   return null;
 }
 
-/**
- * Escapa HTML para evitar XSS no conteúdo da IA.
- */
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
