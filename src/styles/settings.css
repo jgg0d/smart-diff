@@ -7,8 +7,8 @@
   --surface:     #161a22;
   --card:        #111420;
   --border:      #252b38;
-  --accent:      #4ade80;
-  --accent-dim:  #1a3328;
+  --accent:      #2563eb;
+  --accent-dim:  #0d1c40;
   --text:        #e2e8f0;
   --text-muted:  #64748b;
   --text-subtle: #3d4a5c;
@@ -19,7 +19,7 @@
   --max-w:       560px;
 
   --c-claude:    #f97316;
-  --c-openai:    #22c55e;
+  --c-openai:    #ffffff;
   --c-gemini:    #3b82f6;
   --c-github:    #8b5cf6;
 }
@@ -165,7 +165,7 @@ body {
 .provider-option[data-provider="openai"].selected .provider-card,
 .provider-option[data-provider="openai"]:has(input:checked) .provider-card {
   border-color: var(--c-openai);
-  background: #0e2218;
+  background: #041820;
 }
 
 .provider-option[data-provider="gemini"].selected .provider-card,
@@ -204,11 +204,11 @@ body {
 
 .field-group.active-provider {
   border-color: var(--accent);
-  background: #0e1f16;
+  background: #091526;
 }
 
 .field-group#fieldClaude.active-provider  { border-color: var(--c-claude); background: #1c1008; }
-.field-group#fieldOpenai.active-provider  { border-color: var(--c-openai); background: #0a1a10; }
+.field-group#fieldOpenai.active-provider  { border-color: var(--c-openai); background: #021218; }
 .field-group#fieldGemini.active-provider  { border-color: var(--c-gemini); background: #081020; }
 
 .field-label {
@@ -300,7 +300,7 @@ body {
 .btn-save {
   padding: 10px 24px;
   background: var(--accent);
-  color: #0a1a10;
+  color: #ffffff;
   border: none;
   border-radius: var(--radius);
   font-family: var(--sans);
@@ -313,7 +313,7 @@ body {
 
 .btn-save:hover { opacity: .9; transform: translateY(-1px); }
 .btn-save:active { transform: translateY(0); }
-.btn-save.saved { background: #25503a; color: var(--accent); }
+.btn-save.saved { background: #0d1c40; color: var(--accent); }
 
 .save-confirm {
   font-family: var(--mono);

@@ -34,7 +34,7 @@ export async function analyze(diff, apiKey) {
       },
       body: JSON.stringify({
         model:       OPENAI_MODEL,
-        max_tokens:  2048,
+        max_tokens:  1536,
         temperature: 0.2,
         messages: [
           {

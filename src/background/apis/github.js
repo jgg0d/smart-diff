@@ -94,17 +94,35 @@ export async function getPRFiles(owner, repo, prNumber, token = '') {
 }
 
 /**
- * Converte a lista de arquivos da API em um diff textual compacto
- * para enviar à IA.
+ * Converte a lista de arquivos da API em um diff textual compacto para a IA.
+ * Remove linhas de contexto (prefixo espaço) e numera hunks com [H0], [H1]…
+ * Reduz tamanho em ~50% sem perder informação semântica.
  *
  * @param {Array} files - Array de file objects da GitHub API
- * @returns {string} - Diff concatenado e formatado
+ * @returns {string} - Diff compacto e formatado
  */
 export function buildDiffText(files) {
   return files
     .map(f => {
       const patch = f.patch || '[binário ou sem diff disponível]';
-      return `### ${f.filename} (${f.status})\n${patch}`;
+      return `### ${f.filename} (${f.status})\n${compactPatch(patch)}`;
     })
     .join('\n\n---\n\n');
+}
+
+function compactPatch(patch) {
+  if (patch.startsWith('[')) return patch;
+  let hunkIdx = -1;
+  return patch
+    .split('\n')
+    .map(line => {
+      if (line.startsWith('@@')) {
+        hunkIdx++;
+        return `[H${hunkIdx}] ${line}`;
+      }
+      if (line.startsWith('+') || line.startsWith('-')) return line;
+      return null;
+    })
+    .filter(l => l !== null)
+    .join('\n');
 }

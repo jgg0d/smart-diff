@@ -41,7 +41,7 @@ export async function analyze(diff, apiKey) {
         ],
         generationConfig: {
           temperature:    0.2,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 1536,
           responseMimeType: 'application/json', // força JSON mode no Gemini
         },
         systemInstruction: {

@@ -24,6 +24,7 @@ const SUMMARY_ANCHOR_SEL = '#files_tab_counter, .pr-toolbar, .diffbar, #files .d
 // ── IDs para limpeza ──────────────────────────────────────────────────────────
 const PANEL_ID         = 'sd-summary-panel';
 const BADGE_CLASS      = 'sd-file-header';
+const HUNK_DESC_CLASS  = 'smart-diff-hunk-desc';
 const LOADING_BAR_ID   = 'sd-loading-bar';
 
 // ── Category → color map (espelho de ai-router.js) ────────────────────────────
@@ -118,6 +119,7 @@ export function injectError(message) {
 function removeExisting() {
   document.getElementById(PANEL_ID)?.remove();
   document.querySelectorAll('.' + BADGE_CLASS).forEach(el => el.remove());
+  document.querySelectorAll('.' + HUNK_DESC_CLASS).forEach(el => el.remove());
   removeLoadingBar();
 }
 
@@ -189,12 +191,17 @@ function injectFileBadges(files) {
     if (fileData && !header.previousElementSibling?.classList.contains(BADGE_CLASS)) {
       const badge = buildBadgeElement(fileData);
       header.parentElement.insertBefore(badge, header);
+
+      if (fileData.hunks?.length) {
+        const fileWrapper = header.closest('.file') || header.parentElement;
+        injectHunkDescriptions(fileWrapper, fileData.hunks);
+      }
     }
   });
 }
 
 /**
- * Tenta injetar badge num elemento de arquivo.
+ * Tenta injetar badge e descrições de hunk num elemento de arquivo.
  */
 function tryInjectBadgeOnElement(fileEl, fileMap) {
   if (!fileEl) return;
@@ -214,6 +221,53 @@ function tryInjectBadgeOnElement(fileEl, fileMap) {
 
   const badge = buildBadgeElement(fileData);
   fileEl.parentElement.insertBefore(badge, fileEl);
+
+  if (fileData.hunks?.length) {
+    injectHunkDescriptions(fileEl, fileData.hunks);
+  }
+}
+
+/**
+ * Injeta linhas de descrição após cada cabeçalho de hunk (@@ ... @@) do arquivo.
+ * Deduplica rows para funcionar no split-view (2 td.blob-code-hunk por linha).
+ * Fallback por conteúdo de texto caso o seletor de classe não bata.
+ */
+function injectHunkDescriptions(fileEl, hunks) {
+  if (!hunks?.length) return;
+
+  const seenRows = new Set();
+  const hunkRows = [];
+
+  // Seletor primário — funciona na maioria das versões do GitHub
+  fileEl.querySelectorAll('td.blob-code-hunk, td.blob-code-expandable').forEach(cell => {
+    const row = cell.closest('tr');
+    if (row && !seenRows.has(row)) {
+      seenRows.add(row);
+      hunkRows.push(row);
+    }
+  });
+
+  // Fallback: linhas cujo texto começa com @@
+  if (!hunkRows.length) {
+    fileEl.querySelectorAll('tr').forEach(row => {
+      if (!seenRows.has(row) && row.textContent.trimStart().startsWith('@@')) {
+        seenRows.add(row);
+        hunkRows.push(row);
+      }
+    });
+  }
+
+  hunkRows.forEach((row, idx) => {
+    const hunk = hunks.find(h => h.i === idx);
+    if (!hunk?.desc) return;
+    if (row.nextElementSibling?.classList.contains(HUNK_DESC_CLASS)) return;
+
+    const colspan = row.querySelectorAll('td').length || 4;
+    const descRow = document.createElement('tr');
+    descRow.className = HUNK_DESC_CLASS;
+    descRow.innerHTML = `<td colspan="${colspan}">${escapeHtml(hunk.desc)}</td>`;
+    row.insertAdjacentElement('afterend', descRow);
+  });
 }
 
 /**

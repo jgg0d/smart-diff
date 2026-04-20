@@ -48,6 +48,20 @@ btnAnalyze.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   try {
+    // Verificar API Key antes de qualquer requisição
+    const { provider: activeProvider = 'claude' } = await chrome.storage.sync.get('provider');
+    const KEY_FIELDS = { claude: 'keyClaude', openai: 'keyOpenai', gemini: 'keyGemini' };
+    const keyField = KEY_FIELDS[activeProvider];
+    if (keyField) {
+      const stored = await chrome.storage.sync.get(keyField);
+      if (!stored[keyField]?.trim()) {
+        setLoading(false);
+        const label = PROVIDER_LABELS[activeProvider] || activeProvider;
+        showFeedback(`Configure a API Key do ${label} nas configurações antes de analisar.`, 'error');
+        return;
+      }
+    }
+
     const response = await sendToContentScript(tab.id, { action: 'ANALYZE_PR' });
 
     if (response?.success) {
