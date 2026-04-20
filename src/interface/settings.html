@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Diff — Configurações</title>
+  <link rel="stylesheet" href="../styles/settings.css" />
+</head>
+<body>
+  <div class="settings-shell">
+
+    <!-- Header -->
+    <header class="settings-header">
+      <a class="back-link" id="btnBack" href="#" title="Fechar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Fechar
+      </a>
+      <div class="header-title">
+        <span class="logo-icon">⟨/⟩</span>
+        <h1>Smart<strong>Diff</strong> <span class="subtitle">Configurações</span></h1>
+      </div>
+    </header>
+
+    <main class="settings-main">
+
+      <!-- Provider Selector -->
+      <section class="card">
+        <h2 class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Provedor de IA
+        </h2>
+        <div class="provider-selector">
+          <label class="provider-option" data-provider="claude">
+            <input type="radio" name="provider" value="claude" />
+            <span class="provider-card">
+              <span class="provider-name">Claude</span>
+              <span class="provider-sub">Anthropic · claude-sonnet-4</span>
+            </span>
+          </label>
+          <label class="provider-option" data-provider="openai">
+            <input type="radio" name="provider" value="openai" />
+            <span class="provider-card">
+              <span class="provider-name">ChatGPT</span>
+              <span class="provider-sub">OpenAI · gpt-4o</span>
+            </span>
+          </label>
+          <label class="provider-option" data-provider="gemini">
+            <input type="radio" name="provider" value="gemini" />
+            <span class="provider-card">
+              <span class="provider-name">Gemini</span>
+              <span class="provider-sub">Google · gemini-2.0-flash</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- API Keys -->
+      <section class="card">
+        <h2 class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          API Keys
+        </h2>
+
+        <div class="field-group" id="fieldClaude">
+          <label class="field-label" for="keyClaude">
+            Anthropic API Key
+            <span class="field-badge">Claude</span>
+          </label>
+          <div class="input-wrap">
+            <input type="password" id="keyClaude" class="field-input" placeholder="sk-ant-…" autocomplete="off" />
+            <button class="toggle-vis" data-target="keyClaude" title="Mostrar/ocultar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group" id="fieldOpenai">
+          <label class="field-label" for="keyOpenai">
+            OpenAI API Key
+            <span class="field-badge">ChatGPT</span>
+          </label>
+          <div class="input-wrap">
+            <input type="password" id="keyOpenai" class="field-input" placeholder="sk-…" autocomplete="off" />
+            <button class="toggle-vis" data-target="keyOpenai" title="Mostrar/ocultar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group" id="fieldGemini">
+          <label class="field-label" for="keyGemini">
+            Google AI API Key
+            <span class="field-badge">Gemini</span>
+          </label>
+          <div class="input-wrap">
+            <input type="password" id="keyGemini" class="field-input" placeholder="AIza…" autocomplete="off" />
+            <button class="toggle-vis" data-target="keyGemini" title="Mostrar/ocultar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GitHub Token -->
+      <section class="card">
+        <h2 class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub
+        </h2>
+        <div class="field-group" id="fieldGithub">
+          <label class="field-label" for="keyGithub">
+            Personal Access Token
+            <span class="field-badge github">GitHub</span>
+          </label>
+          <div class="input-wrap">
+            <input type="password" id="keyGithub" class="field-input" placeholder="ghp_…" autocomplete="off" />
+            <button class="toggle-vis" data-target="keyGithub" title="Mostrar/ocultar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="field-hint">Necessário para acessar diffs de repositórios privados. Escopo mínimo: <code>repo</code></p>
+        </div>
+      </section>
+
+      <!-- Save -->
+      <div class="save-row">
+        <button class="btn-save" id="btnSave">Salvar configurações</button>
+        <span class="save-confirm" id="saveConfirm"></span>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
